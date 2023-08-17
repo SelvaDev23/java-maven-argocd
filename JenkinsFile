@@ -1,39 +1,35 @@
 pipeline {
   agent any
+  tools{
+      maven 'maven'
+  }  
    
   stages {
-    stage('Checkout') {
-      steps {
-        sh 'echo passed'
-        //git branch: 'master', url: 'https://github.com/SelvaDev23/java-maven-argocd.git'
-      }
-    }
-    stage('Build and Test') {
-      steps {
-        sh 'ls -ltr'
-        // build the project and create a JAR file
-        sh 'mvn clean package'
-      }
-    }
+        stage('Build Maven'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/SelvaDev23/java-maven-argocd.git']]])
+                sh 'mvn clean package'
+             }
+        }
     
-    stage('Build Docker Image') {
-      steps {
+        stage('Build Docker Image') {
+            steps {
                 script {
-                    sh 'docker build -t iamselva/spring-boot:v1'
+                    sh 'docker build -t iamselva/spring-boot .'
             }
         }
     }
   
-     stage('push image to docker'){
-       steps {
-        script {
-            withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
-                    sh 'docker login -u iamselva -p ${dockerhubpwd}'
+       stage('push image to docker'){
+           steps {
+               script {
+            	   withCredentials([string(credentialsId: 'dockerhubpwd', variable: 'dockerhubpwd')]) {
+                   sh 'docker login -u iamselva -p ${dockerhubpwd}'
                         
-                    }
-                    sh 'docker push iamselva/spring-boot:v1'
-            }
-        }
-      }
-    }
+                   }
+                   sh 'docker push iamselva/spring-boot'
+               }
+           }    
+       }
+   }
 
